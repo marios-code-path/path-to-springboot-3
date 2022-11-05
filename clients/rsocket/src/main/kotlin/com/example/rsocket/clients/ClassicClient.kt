@@ -2,15 +2,19 @@ package com.example.rsocket.clients
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.rsocket.RSocketRequester
+import org.springframework.messaging.rsocket.RSocketStrategies
+import org.springframework.messaging.rsocket.annotation.support.RSocketMessageHandler
 import org.springframework.messaging.rsocket.retrieveMono
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import java.util.*
 
 @Component
-class ClassicClient(@Value("\${spring.rsocket.server.port}") port: String, val builder: RSocketRequester.Builder) : HelloClient {
+class ClassicClient(@Value("\${spring.rsocket.server.port}") val port: String, val builder: RSocketRequester.Builder) : HelloClient {
 
-    val requester = builder.tcp("localhost", port.toInt())
+    val requester: RSocketRequester = builder
+            .tcp("localhost", port.toInt())
+
 
     override fun hello(lang: Optional<String>, name: String): Mono<String> =
             requester

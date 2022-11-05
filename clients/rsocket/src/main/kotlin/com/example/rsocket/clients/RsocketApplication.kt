@@ -32,4 +32,5 @@ class RsocketApplication {
 				.doOnNext(::println)
 				.block()
 	}
+
 }

@@ -10,27 +10,11 @@ import java.util.*
 import java.util.stream.Collectors
 
 @RestController
-class HelloController {
-    val helloLangs: Map<String, String> = mapOf(
-            Pair("en", "Hello"),
-            Pair("fr", "Bonjour"),
-            Pair("de", "Guten tag"),
-            Pair("it", "Salve"),
-            Pair("cn", "nǐn hǎo"),
-            Pair("ara", "asalaam alaikum"),
-            Pair("jp", "konnichiwa")
-    )
-
-    val names: MutableSet<String> = HashSet()
-
+class HelloController(val svc: HelloService) {
     @RequestMapping("hello/{name}")
     fun hello(@RequestParam("lang", required = false) lang: Optional<String>, @PathVariable name: String): Mono<String> =
             Mono.create { sink ->
-                names.add(name)
-                val hello = helloLangs[lang.orElse("jp")]
-                sink.success("$hello $name")
+                val hello = svc.sayHello(name, lang.orElse("en"))
+                sink.success(hello)
             }
-
-    @RequestMapping("names")
-    fun names(): Mono<String> = Mono.just(names.stream().collect(Collectors.joining()))
 }

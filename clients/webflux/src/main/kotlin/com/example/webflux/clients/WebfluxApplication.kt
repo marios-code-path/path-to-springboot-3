@@ -1,5 +1,7 @@
 package com.example.webflux.clients
 
+import io.micrometer.observation.ObservationRegistry
+import io.micrometer.observation.aop.ObservedAspect
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.runApplication
@@ -10,7 +12,8 @@ import org.springframework.web.reactive.function.client.support.WebClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
 import java.util.*
 
-@SpringBootApplication
+
+@SpringBootApplication(proxyBeanMethods = false)
 class WebfluxApplication {
 
     companion object {
@@ -21,23 +24,27 @@ class WebfluxApplication {
     }
 
     @Bean
-    fun readyListener(client: HelloClient) = ApplicationListener<ApplicationReadyEvent> {
-        event ->
-                client.hello(Optional.empty(), "User")
-                        .doOnNext { hello ->
-                            println("Message: $hello")
-                        }
-                        .block()
-
-                client.names()
-                        .doOnNext(::println)
-                        .block()
+    fun readyListener(client: HelloClient) = ApplicationListener<ApplicationReadyEvent> { event ->
+        client.hello(Optional.empty(), "User")
+                .doOnNext { hello ->
+                    println("Response: $hello")
+                }
+                .block()
     }
 
     @Bean
     fun helloClient(builder: WebClient.Builder) =
-        HttpServiceProxyFactory
-                .builder(WebClientAdapter.forClient(builder.baseUrl("http://localhost:8080").build()))
-                .build()
-                .createClient(HelloClient::class.java)
+            HttpServiceProxyFactory
+                    .builder(WebClientAdapter.forClient(builder.baseUrl("http://localhost:8081").build()))
+                    .build()
+                    .createClient(HelloClient::class.java)
+
+
+    @Bean
+    fun registry(): ObservationRegistry = ObservationRegistry.NOOP
+
+    @Bean
+    fun observedAspect(observationRegistry: ObservationRegistry): ObservedAspect =
+            ObservedAspect(observationRegistry)
+
 }
