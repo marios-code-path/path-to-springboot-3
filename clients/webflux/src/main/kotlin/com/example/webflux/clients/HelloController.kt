@@ -12,7 +12,8 @@ import java.util.stream.Collectors
 @RestController
 class HelloController(val svc: HelloService) {
     @RequestMapping("hello/{name}")
-    fun hello(@RequestParam("lang", required = false) lang: Optional<String>, @PathVariable name: String): Mono<String> =
+    fun hello(@RequestParam("lang", required = false) lang: Optional<String>,
+              @PathVariable name: String): Mono<String> =
             Mono.create { sink ->
                 val hello = svc.sayHello(name, lang.orElse("en"))
                 sink.success(hello)

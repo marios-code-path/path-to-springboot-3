@@ -32,13 +32,13 @@ class WebfluxApplication {
                 .block()
     }
 
+
     @Bean
     fun helloClient(builder: WebClient.Builder) =
             HttpServiceProxyFactory
                     .builder(WebClientAdapter.forClient(builder.baseUrl("http://localhost:8081").build()))
                     .build()
                     .createClient(HelloClient::class.java)
-
 
     @Bean
     fun registry(): ObservationRegistry = ObservationRegistry.NOOP

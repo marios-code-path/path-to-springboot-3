@@ -10,5 +10,5 @@ already, which takes care of explaining most of the details mentioned here.
 
 ## Why replace Sleuth?
 
-Since 
+Quotes Starbuxman: "So spring framework couldnt support sleuth since it was built on top of spring cloud, and spring cloud built on spring boot, and spring boot built on spring framework. There would be a circular dependency " 
 # Problems
