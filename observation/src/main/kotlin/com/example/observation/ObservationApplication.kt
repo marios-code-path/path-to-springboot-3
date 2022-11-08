@@ -10,14 +10,24 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
+import org.springframework.ui.ModelMap
 import org.springframework.util.StringUtils
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.context.request.WebRequest
+import org.springframework.web.context.request.WebRequestInterceptor
+import org.springframework.web.servlet.HandlerInterceptor
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import org.springframework.web.servlet.handler.WebRequestHandlerInterceptorAdapter
+import java.lang.Exception
 
-@SpringBootApplication(proxyBeanMethods = false)
+@SpringBootApplication
 class ObservationApplication {
 
     @Bean
@@ -36,10 +46,10 @@ fun main(args: Array<String>) {
 class MyRestController(val svc: HelloService) {
     val logger: Logger = LoggerFactory.getLogger(HelloHandler::class.java)
 
-    @RequestMapping("/hello/{name}")
+    @GetMapping("/hello/{name}")
     fun hello(@PathVariable("name") name: String): Greeting {
 
-        logger.info("Request for salutation")
+        logger.info("Received request for salutation")
         return svc.getHello(name)
     }
 }
@@ -61,6 +71,7 @@ class HelloService {
         return Greeting("HELLO THERE, $name at " + System.currentTimeMillis())
     }
 }
+
 
 @Component
 class HelloHandler : ObservationHandler<Observation.Context> {

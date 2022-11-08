@@ -4,13 +4,13 @@ datasources:
     - name: Prometheus
       type: prometheus
       access: proxy
-      url: http://host.docker.internal:9090
+      url: http://prometheus:9090
       editable: false
       jsonData:
         httpMethod: POST
         exemplarTraceIdDestinations:
           - name: trace_id
-            datasourceUid: tempo
+            datasourceUid: 'tempo'
     - name: Tempo
       type: tempo
       access: proxy
@@ -39,7 +39,7 @@ datasources:
       apiVersion: 1
       jsonData:
           derivedFields:
-              -   datasourceUid: tempo
+              -   datasourceUid: 'tempo'
                   matcherRegex: \[.+,(.+?),
                   name: TraceID
                   url: $${__value.raw}
