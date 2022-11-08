@@ -26,6 +26,10 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.web.servlet.handler.WebRequestHandlerInterceptorAdapter
 import java.lang.Exception
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.sin
 
 @SpringBootApplication
 class ObservationApplication {
@@ -57,6 +61,8 @@ class MyRestController(val svc: HelloService) {
 @Service
 class HelloService {
 
+    val aInt: AtomicInteger = AtomicInteger(0)
+
     @Observed(name = "greeting",
             contextualName = "say-hi",
             lowCardinalityKeyValues = ["GreetingType", "Salutation"])
@@ -66,9 +72,12 @@ class HelloService {
                 name[0].isDigit()) {
             throw IllegalArgumentException("Invalid name format.")
         }
+        // Plucked from:
+        // https://cs.smu.ca/~porter/csc/465/code/eckel/c13/SineWave.java2html
+        val latency: Long = abs(floor((sin(Math.PI/200 * aInt.addAndGet(1) )) * 250 ).toLong())
 
-        Thread.sleep(2000)
-        return Greeting("HELLO THERE, $name at " + System.currentTimeMillis())
+        Thread.sleep(latency)
+        return Greeting("HELLO THERE, $name at ${System.currentTimeMillis()} delayed for $latency ms.")
     }
 }
 
