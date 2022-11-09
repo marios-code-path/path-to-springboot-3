@@ -1,8 +1,7 @@
 package com.example.observation
 
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
+import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.RequestAttributes
@@ -21,17 +20,16 @@ class ProblemDetailHandler : ResponseEntityExceptionHandler() {
      */
     @ExceptionHandler(java.lang.IllegalArgumentException::class)
     fun handleException(req: WebRequest,
-                        except: IllegalArgumentException): ResponseEntity<Any> {
+                        except: IllegalArgumentException): ProblemDetail {
 
         val attr = req.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) as Map<String, String>
-        val name = attr.getOrDefault("name", "-")
+        val name = attr.getOrDefault("name", "N/A")
 
-        val problemDetail = createProblemDetail(except,
+        return createProblemDetail(except,
                 HttpStatus.BAD_REQUEST,
                 "Exception: ${except.message}",
                 null,   // e.g. problemDetail.custom
                 arrayOf(name),
                 req)
-        return createResponseEntity(problemDetail, HttpHeaders.EMPTY, HttpStatus.BAD_REQUEST, req)
     }
 }
