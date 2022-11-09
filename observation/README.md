@@ -48,8 +48,8 @@ to review [the Actuator docs](https://docs.spring.io/spring-boot/docs/current/re
 This will be a great starting place if you are already new to Actuator, or just want to know how things
 can be turned on or off, apply security, etc...
 
-Since Spring Framework 5, metrics in Spring is handled by [Micrometer](). This framework is a vendor-neutral API
-for instrumenting code and sending measurements to aggregators such as Prometheus, InfluxDB, Netflix Atlas 
+Since Spring Framework 6, metrics and tracing get handled by [Micrometer]().  This framework is a vendor-neutral 
+API for instrumenting code and sending measurements to aggregators such as Prometheus, InfluxDB, Netflix Atlas 
 and more. Furthermore, Spring Actuator and Micrometer work together - Micrometer gathers metrics, Actuator to
 releases this information through endpoints.
 
@@ -253,9 +253,10 @@ Transfer-Encoding: chunked
 }
 ```
 
-
 ## Links and Readings
 
 [Spring Metrics Docs](https://docs.spring.io/spring-metrics/docs/current/public/prometheus)
 
 [Issue detailing support for ProblemDetails](https://github.com/spring-projects/spring-framework/issues/27052)
+
+[RFC 7807](https://www.rfc-editor.org/rfc/rfc7807)
