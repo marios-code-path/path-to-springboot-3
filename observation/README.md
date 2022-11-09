@@ -188,6 +188,74 @@ execute this application and contact the exposed application endpoint using our 
 http :8787/hello/Mr\ \.Kenobi
 ```
 
+# ProblemDetails and Errors
+
+New in Spring Framework 6 is the addition of support for problem details based on [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807).
+
+ResponseEntityExceptionHandler is a base class for a controller advice that uses an 
+@ExceptionHandler method to render error details. It has been around for some time, 
+but so far application have had to extend it to decide on the error body format. 
+We can now fill in the blank and use ProblemDetail for ResponseError exceptions that 
+expose such information. A similar class does not exist for WebFlux but can be added.
+
+```kotlin
+@ControllerAdvice
+class ProblemDetailHandler : ResponseEntityExceptionHandler() {
+
+    /**
+     * ErrorResponse is supported as a return value from @ExceptionHandler methods that render
+     * directly to the response, e.g. by being marked @ResponseBody, or declared in an
+     * @RestController or RestControllerAdvice class.
+     */
+    @ExceptionHandler(java.lang.IllegalArgumentException::class)
+    fun handleException(req: WebRequest,
+                        except: IllegalArgumentException): ProblemDetail {
+
+        val attr = req.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) as Map<String, String>
+        val name = attr.getOrDefault("name", "N/A")
+
+        return createProblemDetail(except,
+                HttpStatus.BAD_REQUEST,
+                "Exception: ${except.message}",
+                null,   // e.g. problemDetail.custom
+                arrayOf(name),
+                req)
+    }
+}
+```
+
+A ProblemDetail reason message can be represented by a message-source. By default, message sources
+get located by the following method: "problemDetail." followed by the full class name (e.g. `problemDetail.java.lang.IllegalArgumentException`).
+Thus, we can add a `resources/messages.properties` for problem detail message located codes.
+
+messages.properties:
+```properties
+problemDetail.java.lang.IllegalArgumentException=Name cannot begin with digits: {0}.
+problemDetail.custom=Name must start with letters: {0}.
+```
+
+Now, if we issue an invalid request, we will get a ProblemDetail report of the error:
+```shell
+http :8787/hello/3cp0
+
+HTTP/1.1 400 
+Connection: close
+Content-Type: application/problem+json
+Date: Wed, 09 Nov 2022 06:32:02 GMT
+Transfer-Encoding: chunked
+
+{
+    "detail": "Name cannot begin with digits: 3cp0.",
+    "instance": "/hello/3cp0",
+    "status": 400,
+    "title": "Bad Request",
+    "type": "about:blank"
+}
+```
+
+
 ## Links and Readings
 
 [Spring Metrics Docs](https://docs.spring.io/spring-metrics/docs/current/public/prometheus)
+
+[Issue detailing support for ProblemDetails](https://github.com/spring-projects/spring-framework/issues/27052)
