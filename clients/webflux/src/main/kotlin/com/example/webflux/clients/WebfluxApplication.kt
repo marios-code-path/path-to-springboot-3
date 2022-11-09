@@ -31,7 +31,7 @@ class WebfluxApplication {
     val log: Logger = LoggerFactory.getLogger(WebfluxApplication::class.java)
 
     @Bean
-    @ImportRuntimeHints(ClientRuntimeHintsRegistrar::class)
+    //@ImportRuntimeHints(ClientRuntimeHintsRegistrar::class)
     @RegisterReflectionForBinding(Salutation::class)
     fun helloClient(builder: WebClient.Builder) =
             HttpServiceProxyFactory
@@ -51,26 +51,13 @@ fun main(args: Array<String>) {
     runApplication<WebfluxApplication>(*args)
 }
 
-@ImportRuntimeHints(ClientRuntimeHintsRegistrar::class)
+//@ImportRuntimeHints(ClientRuntimeHintsRegistrar::class)
 @Configuration
 class HostCaller(val registry: ObservationRegistry, val client: SalutationClient) {
     val log: Logger = LoggerFactory.getLogger(HostCaller::class.java)
 
-    @Timed()
     @Scheduled(initialDelay = 2000, fixedRate = 2000)
     fun callHost() {
-//        val obs = Observation.createNotStarted("reactive-hello", registry)
-//                .lowCardinalityKeyValue("GreetingType", "Salutation")
-//                .contextualName("reactive-call-host")
-//                .start()
-//
-//        client.hello("C3PO")
-//                .doOnNext { log.info(it.greeting) }
-//                .doOnTerminate{
-//                    obs.stop()
-//                }
-//                .subscribe()
-//
         Observation
                 .createNotStarted("hello.client", registry)
                 .lowCardinalityKeyValue("GreetingType", "Salutation")
@@ -89,13 +76,13 @@ class HostCaller(val registry: ObservationRegistry, val client: SalutationClient
     }
 }
 
-object ClientRuntimeHintsRegistrar : RuntimeHintsRegistrar {
-    override fun registerHints(hints: RuntimeHints, classLoader: ClassLoader?) {
-        hints.proxies().registerJdkProxy(
-                SalutationClient::class.java,
-                SpringProxy::class.java,
-                Advised::class.java,
-                DecoratingProxy::class.java
-        )
-    }
-}
+//object ClientRuntimeHintsRegistrar : RuntimeHintsRegistrar {
+//    override fun registerHints(hints: RuntimeHints, classLoader: ClassLoader?) {
+//        hints.proxies().registerJdkProxy(
+//                SalutationClient::class.java,
+//                SpringProxy::class.java,
+//                Advised::class.java,
+//                DecoratingProxy::class.java
+//        )
+//    }
+//}
