@@ -28,6 +28,13 @@ In this example it is obvious about what kind of request will be made. In additi
 verbs, we will also send the media types accepted. The `ResponseEntity` return type
 is useful when you want your client to have access to the request result status metadata.
 
+
+## Define a classic client
+
+ TBD maybe not. We already know what a classic restTemplate/ webClient client looks like!
+
+## Define a HttpProxy client
+
 Now, with just a little configuration, we can setup the client to read `org.springframework.web.service.annotation`
 annotated methods. This introduces some introspection at runtime, but does all the work for transforming our interface
 signature into real HTTP calls.
@@ -43,6 +50,9 @@ signature into real HTTP calls.
                     .build()
                     .createClient(SalutationClient::class.java)
 ```
+
+### Calling the service
+
 The calling side now looks like a regular Service call!
 
 ```kotlin
@@ -54,17 +64,6 @@ The calling side now looks like a regular Service call!
                             }
                             .block()
 ```
-
-## Define a classic client
-
-## Define a HttpProxy client
-
-### Different Verbs
-
-
-## Observing the Client calls
-
-### Actuator with Prometheus
 
 ### 
 
