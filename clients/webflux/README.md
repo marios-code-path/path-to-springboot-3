@@ -70,5 +70,3 @@ The calling side now looks like a regular Service call!
 ## Links
 
 [Spring 6 Deprecation List](https://docs.spring.io/spring-framework/docs/current-SNAPSHOT/javadoc-api/deprecated-list.html)
-
-[Spring Metrics Docs](https://docs.spring.io/spring-metrics/docs/current/public/prometheus)

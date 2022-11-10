@@ -7,12 +7,12 @@ import org.springframework.web.service.annotation.GetExchange
 import reactor.core.publisher.Mono
 
 
-interface SalutationClient {
+interface GreetingClient {
     @GetExchange("/hello/{name}", accept = [MediaType.APPLICATION_JSON_VALUE])
-    fun hello(@PathVariable name: String): Mono<Salutation>
+    fun hello(@PathVariable name: String): Mono<Greeting>
 
     @GetExchange("/hello/{name}", accept = [MediaType.APPLICATION_JSON_VALUE])
-    fun entityHello(@PathVariable name: String): Mono<ResponseEntity<Salutation>>
+    fun entityHello(@PathVariable name: String): Mono<ResponseEntity<Greeting>>
 }
 
-data class Salutation(val greeting: String)
+data class Greeting(val greeting: String)

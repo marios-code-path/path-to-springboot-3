@@ -6,6 +6,7 @@ import io.micrometer.observation.annotation.Observed
 import io.micrometer.observation.aop.ObservedAspect
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
@@ -23,7 +24,7 @@ import kotlin.math.sin
 class ObservationApplication {
 
     @Bean
-    fun observationRegistry():ObservationRegistry = ObservationRegistry.create()
+    fun observationRegistry(): ObservationRegistry = ObservationRegistry.create()
 
     @Bean
     fun observedAspect(observationRegistry: ObservationRegistry): ObservedAspect =
@@ -43,7 +44,6 @@ class MyRestController(val svc: HelloService, val registry: ObservationRegistry)
 
     @GetMapping("/hello/{name}")
     fun hello(@PathVariable("name") name: String): Greeting {
-
         logger.info("Received request for salutation")
         return svc.getHello(name)
     }
@@ -62,7 +62,7 @@ class MyRestController(val svc: HelloService, val registry: ObservationRegistry)
 }
 
 @Service
-class HelloService() {
+class HelloService {
     val log: Logger = LoggerFactory.getLogger(HelloService::class.java)
 
     val aInt: AtomicInteger = AtomicInteger(0)
@@ -72,8 +72,7 @@ class HelloService() {
             lowCardinalityKeyValues = ["GreetingType", "Salutation"])
     fun getHello(name: String): Greeting {
 
-        if (StringUtils.hasText(name) &&
-                name[0].isDigit()) {
+        if (StringUtils.hasText(name) && name[0].isDigit()) {
             throw IllegalArgumentException("Invalid name format.")
         }
         // Equation Plucked from:
@@ -91,6 +90,5 @@ class HelloService() {
         return "Pong"
     }
 }
-
 
 data class Greeting(val greeting: String)
