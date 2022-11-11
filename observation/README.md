@@ -17,7 +17,7 @@ that we will need to make this app reality. Alternatively, you might just copy a
 will execute a similar function from the commandline.
 
 ```bash
-curl -G https://start.spring.io/observable.zip -o observable.zip -d dependencies=web,actuator,prometheus -d packageName=com.example.observation \
+curl -G https://start.spring.io/starter.zip -o observable.zip -d dependencies=web,actuator,prometheus -d packageName=com.example.observation \
 -d description=REST%20Observation%20Demo -d type=maven-project -d language=java -d platformVersion=3.0.0-SNAPSHOT \
 -d packaging=jar -d jvmVersion=17 -d groupId=com.example -d artifactId=observation -d name=observation  
 ```
@@ -225,8 +225,8 @@ New media type are defined for this spec under [RFC6838]() allowing both `proble
 
 ## Integraing ProblemDetails
 
-ResponseEntityExceptionHandler is a base class for a controller advice that uses an 
-@ExceptionHandler method to render error details. Since this is a breaking change, in order to get default problem detail handling, you must manually enable problem details feature in Spring. There are 2 settings which to choose depending on application type.
+ResponseEntityExceptionHandler is a base class for a controller advice that uses an @ExceptionHandler method to render 
+error details. This is a breaking change, and means you must manually enable the problem details feature in Spring. There are 2 settings which to choose depending on application type.
 
 For `webflux` applications:
 ```properties
@@ -238,7 +238,7 @@ For `webmvc` applications:
 spring.mvc.problemdetails.enabled=true
 ```
 
-We can now fill in the blank and use ProblemDetail for ResponseError exceptions that 
+We can now fill in the  and use ProblemDetail for ResponseError exceptions that 
 expose such information. A similar class does not exist for WebFlux but can be added.
 
 ```kotlin

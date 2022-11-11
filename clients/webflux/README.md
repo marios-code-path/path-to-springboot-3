@@ -64,9 +64,6 @@ The calling side now looks like a regular Service call!
                             }
                             .block()
 ```
-
-### 
-
 ## Links
 
 [Spring 6 Deprecation List](https://docs.spring.io/spring-framework/docs/current-SNAPSHOT/javadoc-api/deprecated-list.html)

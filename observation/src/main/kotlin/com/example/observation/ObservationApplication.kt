@@ -23,6 +23,7 @@ import kotlin.math.sin
 @SpringBootApplication
 class ObservationApplication {
 
+
     @Bean
     fun observationRegistry(): ObservationRegistry = ObservationRegistry.create()
 
