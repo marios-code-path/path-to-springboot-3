@@ -18,13 +18,13 @@
 		<kotlin.version>1.7.20</kotlin.version>
 	</properties>
 	<dependencies>
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-resolver-dns-native-macos</artifactId>
-			<version>4.1.84.Final</version>
-			<classifier>osx-x86_64</classifier>
-			<scope>runtime</scope>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>io.netty</groupId>-->
+<!--			<artifactId>netty-resolver-dns-native-macos</artifactId>-->
+<!--			<version>4.1.84.Final</version>-->
+<!--			<classifier>osx-x86_64</classifier>-->
+<!--			<scope>runtime</scope>-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
@@ -46,19 +46,15 @@
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>context-propagation</artifactId>
-			<version>1.0.0</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>io.micrometer</groupId>-->
+<!--			<artifactId>context-propagation</artifactId>-->
+<!--			<version>1.0.0</version>-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>io.zipkin.reporter2</groupId>
 			<artifactId>zipkin-reporter-brave</artifactId>
 			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.github.loki4j</groupId>
@@ -96,10 +92,10 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-core-micrometer</artifactId>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>io.projectreactor</groupId>-->
+<!--			<artifactId>reactor-core-micrometer</artifactId>-->
+<!--		</dependency>-->
 	</dependencies>
 
 	<build>

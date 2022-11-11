@@ -305,3 +305,5 @@ Transfer-Encoding: chunked
 [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807)
 
 [Observability Writeup](https://spring.io/blog/2022/10/12/observability-with-spring-boot-3)
+
+[Observability Migration from Sleuth](https://github.com/micrometer-metrics/micrometer/wiki/Migrating-to-new-1.10.0-Observation-API)
