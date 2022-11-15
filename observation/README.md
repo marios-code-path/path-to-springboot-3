@@ -1,30 +1,53 @@
-# Spring Framework 6 - Observation and ProblemDetails
+# Reactive Tracing with Spring Boot 6
 
-With Spring Boot 3.0, we reap the benefits of updating to Spring Framework 6. This gives us a plethora of new and enhanced 
-functionality at our disposal. For instance, the updated support for [Micrometer Tracing](https://micrometer.io/docs/tracing) 
-is here, which replaces [Spring Cloud Sleuth](https://spring.io/projects/spring-cloud-sleuth) support. There is a great [writeup](https://spring.io/blog/2022/10/12/observability-with-spring-boot-3) on this
-already, which takes care of explaining a good chunk of details.
+With Spring Boot 3.0, we reap the benefits of cutting edge changes with Spring Framework 6. This gives us a plethora of new and enhanced observability functionality at our disposal.  You might wander if this feature has already existed, and why this is considered new. It is not new, but rather re-tooling the existing Sleuth logic into micrometer. Furthermore, there are architectural framework decisions that impinge upon this change. As such, a quote from a Spring luminary is necessary: 
 
 > **_QUOTE:_** Starbuxman: "So spring framework couldn't support Sleuth since it was built on top of spring cloud, and spring cloud built on spring boot, and spring boot built on spring framework. There would be a circular dependency "
+
+In this guide, we will take a look at the updated support for [Micrometer Tracing](https://micrometer.io/docs/tracing), which replaces [Spring Cloud Sleuth](https://spring.io/projects/spring-cloud-sleuth) support. There is a great [writeup](https://spring.io/blog/2022/10/12/observability-with-spring-boot-3) on this already, which takes care of explaining a good chunk of details.
 
 Additionally, if you are looking to migrate, please see [this WIKI](https://github.com/micrometer-metrics/micrometer/wiki/Migrating-to-new-1.10.0-Observation-API)
 as it describes and gives samples related to the scenarios you will encounter when deciding/making the change from Sleuth to the new Micrometer API.
 
 # Quick Setup
 
-Browser over to our favorite website - [start dot spring dot io](https://start.spring.io) - and select a few dependencies
-that we will need to make this app reality. Alternatively, you might just copy and past the following script as it
-will execute a similar function from the commandline.
+We will begin by starting a small REST controller application. It can be started by either starting at our favorite website - [start dot spring dot io](https://start.spring.io) - ther by selecting a few options:
 
-```bash
+Dependencies: 
+
+  * Web
+  * Actuator
+  * Prometheus
+
+Platform Version:
+
+  * 3.0.0
+
+Packaging: 
+
+  * Jar
+
+JvmVersion:
+
+  * 17
+
+Type:
+
+  * Maven
+
+Here is a screenshot (for reference) of what the configuration on `start.spring.io` looks like:
+
+![start dot spring io](images/start-spring-io.png)
+
+Alternatively, if you have the `curl`  client installed then copy and paste the following script as it will execute a similar function from the commandline.
+
+
+```shell
 curl -G https://start.spring.io/starter.zip -o observable.zip -d dependencies=web,actuator,prometheus -d packageName=com.example.observation \
 -d description=REST%20Observation%20Demo -d type=maven-project -d language=java -d platformVersion=3.0.0-SNAPSHOT \
 -d packaging=jar -d jvmVersion=17 -d groupId=com.example -d artifactId=observation -d name=observation  
 ```
 
-A screenshot for reference:
-
-![start dot spring io](images/start-spring-io.png)
 
 Open this project in your favorite IDE and follow along, or simply [browse]() the source for reference.
 
@@ -37,25 +60,84 @@ server.port=8787
 logging.pattern.level=%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]
 ```
 
+## A Greeting Service
+
+A service will let us create a small amount of indirection for the evenentual REST endpoint, and allow us to establish service hand-offs in tracing logs. In this example, we only need
+to return a specific payload: `Greeting`.
+
+The payload is a simple record:
+```java
+record Greeting(String name) {}
+```
+
+The following service code represents the service we'll use in a REST Controller later:
+```java
+@Service
+@Slf4j
+class GreetingService {
+    private final LatencySupplier latency = new LatencySupplier();
+    private final ObservationRegistry registry;
+
+    GreetingService(ObservationRegistry registry) {
+        this.registry = registry;
+    }
+
+    public Mono<Greeting> greeting(String name) {
+
+        Long lat = latency.get();
+        return Mono
+                .just(new Greeting(name))
+                .delayElement(Duration.ofMillis(lat))
+                .doOnNext(g -> log.info(String.format("Latency: %d", lat)))
+                ;
+    }
+}
+```
+
+Note the `LatencySupplier` class declared;  we will use this in order to demonstrate micrometer latency timers in our monitoring tool front-end [Grafana](https://grafana.com). 
+
+LatencySupplier.java
+```java
+class LatencySupplier implements Supplier<Long> {
+ 
+    @Override public Long get() {
+        return new Random(System.currentTimeMillis()).nextLong(250);
+    }
+}
+```
+## Create a REST endpoint
+
+Next, we will need to add a REST endpoint that simply vends salutations/greetings to a name derived from the path parameter {name}. It looks like this:
+
+```kotlin
+@RestController
+class GreetingController {
+    private final GreetingService service;
+ 
+    GreetingController(GreetingService service) { this.service = service; }
+
+    @GetMapping("/hello/{name}")
+    public Mono<Greeting> greeting(@PathVariable("name") String name) {
+        return service
+                .greeting(name);
+    }
+}```
 # Application Monitoring
 
-For your application to be considered 'production ready', you MUST include some amount of monitoring features that include
-a way to determine how your app is doing at runtime. Spring Boot Actuator provides all of Spring Boot's monitoring features. 
-Luckily, Actuator can be enabled by adding a single dependency to your build.
+For the application to be considered 'production ready', we must include some amount of monitoring features that indicate how the app is doing at runtime. Luckily, Spring Boot Actuator provides all of Spring Boot's monitoring features.
 
 > **_TIP:_** Because so much of the monitoring information can also be used against your app, as well as add unnecessary data density, it is a good idea 
 to review [the Actuator docs](https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html).
 This will be a great starting place if you are already new to Actuator, or just want to know how things
 can be turned on or off, apply security, etc...
 
-Since Spring Framework 6, metrics and tracing get handled by [Micrometer]().  This framework is a vendor-neutral 
+Since Spring Framework 6, metrics and tracing get handled by [Micrometer](https://micrometer.io).  This framework is a vendor-neutral 
 API for instrumenting code and sending measurements to aggregators such as Prometheus, InfluxDB, Netflix Atlas 
-and more. Furthermore, Spring Actuator and Micrometer work together - Micrometer gathers metrics, Actuator to
-releases this information through endpoints.
+and more. Furthermore, Spring Actuator and Micrometer work together - Micrometer gathers metrics, and Actuator will release this information through endpoints.
 
 ## Enable Prometheus support
 
-We will need to configure Actuator for exposure of the Prometheus bound data. 
+We will need to tell Actuator we want exposure of Prometheus bound metric data. 
 Let's configure our app to expose the specific `/actuator/prometheus` endpoint:
 
 ```properties
@@ -66,7 +148,7 @@ management.endpoints.web.exposure.include=health,prometheus
 On the Prometheus side, we will need to add a [scrape config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
 to let it know where to find our actuator endpoint. 
 
-> **_NOTE:_** In this configuration, we are running a docker hosted instance of Prometheus; You will need to change the host names as needed for your specific setup.
+> **_NOTE:_** In this configuration, we are running a docker hosted instance of Prometheus; You may need to change the host names as needed for your specific setup.
 
 The `scrape config` block goes into `prometheus.yml`:
 ```yaml
@@ -77,24 +159,6 @@ scrape_configs:
         - targets: ['host.docker.internal:8787']
 ```
 
-## Create a REST endpoint
-
-Next, we will need to add a REST endpoint that simply vends salutations/greetings to a name derived from
-the path parameter {name}. It looks like this:
-
-```kotlin
-@RestController
-class MyRestController(val svc: HelloService) {
-    
-    val logger: Logger = LoggerFactory.getLogger(MyRestController::class.java)
-
-    @GetMapping("/hello/{name}")
-    fun hello(@PathVariable("name") name: String): Greeting {
-        logger.info("Received request for salutation")
-        return svc.getHello(name)
-    }
-}
-```
 
 ## A bit about Micrometer Observation
 
@@ -163,7 +227,7 @@ the long task timer would be named `greeting.active`, and the span would be name
 We can output some logs when a request is received and completed. As mentioned above, this is possible by
 implementing a custom `ObservationHandler`. 
 
-The following `ObservationHandler` will be registered and active during the server lifecycle.:
+The following `ObservationHandler` will be registered and active during the server lifecycle:
 ```kotlin
 @Component
 class HelloObservationHandler : ObservationHandler<Observation.Context> {
@@ -182,119 +246,17 @@ class HelloObservationHandler : ObservationHandler<Observation.Context> {
 }
 ```
 
-execute this application and contact the exposed application endpoint using our favorite [HTTPIE]() command:
+
+Execute this application, then call the exposed endpoint endpoint using our favorite [HTTPIE]() command:
 
 ```shell
 http :8787/hello/Mr\ \.Kenobi
 ```
 
-# ProblemDetails and Errors
+This verifies we created an app that is MOSTLY instrumented...
+# Exemplars
 
-New in Spring Framework 6 is the addition of support for problem details based on [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807). This specification states an JSON response body with the following standard fields:
 
-   *  "type" (string) - A URI reference [RFC3986]() that identifies the
-      problem type.  This specification encourages that, when
-      dereferenced, it provide human-readable documentation for the
-      problem type (e.g., using HTML [W3C.REC-html5-20141028]() ).  When
-      this member is not present, its value is assumed to be
-      "about:blank".
-
-   *  "title" (string) - A short, human-readable summary of the problem
-      type.  It SHOULD NOT change from occurrence to occurrence of the
-      problem, except for purposes of localization (e.g., using
-      proactive content negotiation; see [RFC7231](), Section 3.4).
-
-   *  "status" (number) - The HTTP status code ([RFC7231](), Section 6)
-      generated by the origin server for this occurrence of the problem.
-
-   *  "detail" (string) - A human-readable explanation specific to this
-      occurrence of the problem.
-
-   *  "instance" (string) - A URI reference that identifies the specific
-      occurrence of the problem.  It may or may not yield further
-      information if dereferenced.
-
-> __**NOTE**__:  Problem details are not a debugging tool for the underlying
-   implementation; rather, they are a way to expose greater detail about
-   the HTTP interface itself.  Designers of new problem types need to
-   carefully consider the Security Considerations (Section 5), in
-   particular, the risk of exposing attack vectors by exposing
-   implementation internals through error messages.
-
-New media type are defined for this spec under [RFC6838]() allowing both `problem+json` and `problem+xml`. Spring Boot will return ProblemDetail errors with the given mediatype your encoder/decoderis configured for - JSON by default.
-
-## Integraing ProblemDetails
-
-ResponseEntityExceptionHandler is a base class for a controller advice that uses an @ExceptionHandler method to render 
-error details. This is a breaking change, and means you must manually enable the problem details feature in Spring. There are 2 settings which to choose depending on application type.
-
-For `webflux` applications:
-```properties
-spring.webflux.problemdetails.enabled=true
-```
-
-For `webmvc` applications:
-```
-spring.mvc.problemdetails.enabled=true
-```
-
-We can now fill in the  and use ProblemDetail for ResponseError exceptions that 
-expose such information. A similar class does not exist for WebFlux but can be added.
-
-```kotlin
-@ControllerAdvice
-class ProblemDetailHandler : ResponseEntityExceptionHandler() {
-
-    /**
-     * ErrorResponse is supported as a return value from @ExceptionHandler methods that render
-     * directly to the response, e.g. by being marked @ResponseBody, or declared in an
-     * @RestController or RestControllerAdvice class.
-     */
-    @ExceptionHandler(java.lang.IllegalArgumentException::class)
-    fun handleException(req: WebRequest,
-                        except: IllegalArgumentException): ProblemDetail {
-
-        val attr = req.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) as Map<String, String>
-        val name = attr.getOrDefault("name", "N/A")
-
-        return createProblemDetail(except,
-                HttpStatus.BAD_REQUEST,
-                "Exception: ${except.message}",
-                null,   // e.g. problemDetail.custom
-                arrayOf(name),
-                req)
-    }
-}
-```
-
-A ProblemDetail reason message can be represented by a message-source. By default, message sources
-get located by the following method: "problemDetail." followed by the full class name (e.g. `problemDetail.java.lang.IllegalArgumentException`).
-Thus, we can add a `resources/messages.properties` for problem detail message located codes.
-
-messages.properties:
-```properties
-problemDetail.java.lang.IllegalArgumentException=Name cannot begin with digits: {0}.
-problemDetail.custom=Name must start with letters: {0}.
-```
-
-Now, if we issue an invalid request, we will get a ProblemDetail report of the error:
-```shell
-http :8787/hello/3cp0
-
-HTTP/1.1 400 
-Connection: close
-Content-Type: application/problem+json
-Date: Wed, 09 Nov 2022 06:32:02 GMT
-Transfer-Encoding: chunked
-
-{
-    "detail": "Name cannot begin with digits: 3cp0.",
-    "instance": "/hello/3cp0",
-    "status": 400,
-    "title": "Bad Request",
-    "type": "about:blank"
-}
-```
 
 ## Links and Readings
 
@@ -307,3 +269,5 @@ Transfer-Encoding: chunked
 [Observability Writeup](https://spring.io/blog/2022/10/12/observability-with-spring-boot-3)
 
 [Observability Migration from Sleuth](https://github.com/micrometer-metrics/micrometer/wiki/Migrating-to-new-1.10.0-Observation-API)
+
+[Should I use the Pushgateway?](https://prometheus.io/docs/practices/pushing/)
