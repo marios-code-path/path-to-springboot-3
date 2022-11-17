@@ -206,6 +206,44 @@
                     "legendFormat": "tp95",
                     "range": true,
                     "refId": "C"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "PBFA97CFB590B2093"
+                    },
+                    "editorMode": "code",
+                    "exemplar": true,
+                    "expr": "histogram_quantile(1.00, sum(rate(server_job_seconds_bucket[$__rate_interval])) by (le))",
+                    "legendFormat": "max",
+                    "range": true,
+                    "refId": "D"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "PBFA97CFB590B2093"
+                    },
+                    "editorMode": "code",
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.99, sum(rate(server_job_seconds_bucket[$__rate_interval])) by (le))",
+                    "hide": false,
+                    "legendFormat": "tp99",
+                    "range": true,
+                    "refId": "E"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "PBFA97CFB590B2093"
+                    },
+                    "editorMode": "code",
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.95, sum(rate(server_job_seconds_bucket[$__rate_interval])) by (le))",
+                    "hide": false,
+                    "legendFormat": "tp95",
+                    "range": true,
+                    "refId": "F"
                 }
             ],
             "title": "latency for All",

@@ -15,4 +15,4 @@ interface GreetingClient {
     fun entityHello(@PathVariable name: String): Mono<ResponseEntity<Greeting>>
 }
 
-data class Greeting(val greeting: String)
+data class Greeting(val name: String)

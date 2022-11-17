@@ -1,14 +1,15 @@
 package com.example.observation.reactive;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.tracing.Span;
-import io.micrometer.tracing.Tracer;
-import io.micrometer.tracing.annotation.NewSpan;
-import io.micrometer.tracing.handler.TracingObservationHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.autoconfigure.metrics.ServiceLevelObjectiveBoundary;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -43,21 +44,47 @@ public class ReactiveObservationApplication {
     @Autowired
     ObservationRegistry registry;
 
-    @Scheduled(fixedDelay = 1000, initialDelay = 2000)
+    @Autowired
+    MeterRegistry meterRegistry;
+
+    //@Scheduled(fixedDelay = 500)
     public void logGreetings() {
 
         service.greeting("Mario 12345")
-        .tap(Micrometer.observation(registry))
-//        .tag("service-king", "greeting")
-//        .tag("service-source", "scheduled")
-//        .name("greeting")
-        .doOnEach(logOnNext(msg -> log.info("msg: " + msg)))
-        .subscribe()
-
+                .name("server.job")
+                .tag("job.name", "greeting")
+                .tag("span.kind", "server")
+                .tap(Micrometer.observation(registry))
+                .name("server.job")
+                .subscribe()
         ;
     }
 
+    //Base Observation Usage
+    @Bean
+    public ApplicationListener<ApplicationStartedEvent> doOnStart() {
+        return event -> {
+            generateString();
+        };
+    }
 
+    public void generateString() {
+        String something = Observation
+                .createNotStarted("server.job", registry)
+                .lowCardinalityKeyValue("jobType", "string")
+                .observe(() -> {
+                    log.info("Generating a String...");
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        return "NOTHING";
+                    }
+                    return "SOMETHING";
+                });
+
+        log.info("Result was: " + something);
+    }
 }
 
 @Slf4j
@@ -79,9 +106,6 @@ class GreetingController {
 
         return service
                 .greeting(name)
-                .tap(Micrometer.observation(registry))
-                .name("hello.server.reactive")
-                .delayElement(Duration.ofMillis(250))
                 .doOnEach(logOnNext(msg -> log.info("msg")));
     }
 }
@@ -92,25 +116,15 @@ class GreetingService {
     private final LatencySupplier latency = new LatencySupplier();
 
     @Autowired
-    Tracer tracer;
+    ObservationRegistry registry;
 
-    @NewSpan("local-greeting")
     public Mono<Greeting> greeting(String name) {
-
-
-        Span span = tracer.spanBuilder()
-                .name("GreetingService")
-                .kind(Span.Kind.SERVER)
-                .tag("GreetingType", "HELLO")
-                .start();
         Long lat = latency.get();
         return Mono
                 .just(new Greeting(name))
-                .tag("traceID", span.context().traceId())
+                .tag("latency", lat.toString())
                 .delayElement(Duration.ofMillis(lat))
-                .doOnNext(g -> log.info(String.format("Latency: %d", lat)))
-                .doOnEach(logOnNext(c -> log.info("message is: " + c + " " +span.context().traceId() )))
-                .doFinally(sig -> span.end())
+                .doOnEach(logOnNext(c -> log.info("greeting: " + c)))
                 ;
     }
 }
