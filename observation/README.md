@@ -13,18 +13,21 @@ as it describes and gives samples related to the scenarios you will encounter wh
 
 For an application to be considered 'production ready', we must include some amount of monitoring features that indicate how the app is doing at runtime. Luckily, Spring Boot Actuator provides most of Spring Boot monitoring features.
 
-> **_TIP:_** Because so much of the monitoring information can also be used against your app, as well as add unnecessary data density, it is a good idea to review [the Actuator docs](https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html).
-This will be a great starting place if you are already new to Actuator, or just want to know how to control endpoint exposure or apply security among other things.
+> **_TIP:_** Because so much of the monitoring information can also be used against your app, as well as add unnecessary data density, it is a good idea to review [the Actuator docs](https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html). This will be a great starting place if you are already new to Actuator, or just want to know how to control endpoint exposure or apply security among other things.
 
 ## More about Micrometer Observation
 
-Since Spring Framework 6, metrics and tracing get handled by [Micrometer](https://micrometer.io).  his framework is a vendor-neutral API for instrumenting code and sending measurements to aggregators such as [Prometheus](https://prometheus.io), [InfluxDB](https://influxdata.com), [Netflix Atlas](https://netflix.github.io/atlas-docs/overview/) and more. Furthermore, Spring Actuator and Micrometer work together - Micrometer gathers metrics and makes them available on `management` endpoints via Actuator.
+Since Spring Framework 6, metrics and tracing get handled by [Micrometer](https://micrometer.io) - a vendor-neutral API for instrumenting code. Micrometer also makes available and sends measurements to aggregators such as [Prometheus](https://prometheus.io), [InfluxDB](https://influxdata.com), [Netflix Atlas](https://netflix.github.io/atlas-docs/overview/) and more. Furthermore, Spring Actuator and Micrometer work together - Micrometer gathers metrics and makes them available on `management` endpoints via Actuator.
 
-Micrometer makes use of a number of observation API's to instrument our code. For example, You may emply a [Meter]() to count the number of requests per second in your web app, you may employ a [histogram] to determine `n`-percentile for latency. One way to enable multiple observation criteria is to use Micrometer's [Observation]() API.
+** WHAT AM I TALKING ABOUT ??? **
+Micrometer makes use of a number of observation API's to instrument our code. For example, You may employ a [Meter]() to count the number of requests per second in your web app, or a [histogram] to determine `n`-percentile for latency. One way to enable multiple observation criteria is to use Micrometer's [Observation]() API.
+** WHAT AM I TALKING ABOUT ??? **
 
-There is a quick and simple way to add observation to you Spring-Boot 3 app.
+### First, a Simple
 
-Quickstart:
+There is a quick and simple way to add observation to your Spring-Boot 3 app. We simply need to wrap imperative code with one of the instrumentation APIS - in this case, the highly versatile [Observation](https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-observation/src/main/java/io/micrometer/observation/Observation.java) API.
+
+SimpleObservationApplication.java:
 
 ```java
 @Slf4j
@@ -43,7 +46,8 @@ public class SimpleObservationApplication {
     }
 
     public void generateString() {
-        String something = Observation.createNotStarted("server.job", registry) // 1
+        String something = Observation
+                .createNotStarted("server.job", registry) // 1
                 .lowCardinalityKeyValue("jobType", "string") // 2                
                 .observe(() -> {    // 3
                     log.info("Generating a String...");
@@ -63,11 +67,12 @@ public class SimpleObservationApplication {
 ```
 
 A few things are happening in this code: 
- 1. Create an instance of [Observation]() which aggregates trace, metrics instrumentation.
+ 1. Create an instance of `Observation` bound to an `ObservationRegistry` as stated in [The Doc](https://micrometer.io/docs/observation).
  2. To better track our invocation, set [Low Cardinality keys]() - that is keys which have little or no variations in value. For [High Cardinality]() - which is many value possibilities - use the `.highCardinalityKeyValue()` method.
- 3. Rather than manually calling `.start()` and `.stop()`, use the [observe(Runnable)] to isolate any monitored code in it's own closure.
+ 3. Rather than manually calling `.start()` and `.stop()`, use the [observe(Runnable)] to isolate any monitored code in it's own `Runnable` closure.
+### How Observation works
 
-Micrometer employs "handlers" that are notified about the lifecycle event of an observation. An `ObservationHandler` handler wraps around the [Observation] lifecycle and execute it's methods on lifecycle events. An `ObservationHandler` reacts only to supported implementations of an `Observation.Context` and can create, for example, timers, spans, and logs by reacting to the lifecycle events of an observation, such as:
+Micrometer Observation employs "handlers" that are notified about the lifecycle event of an observation. An `ObservationHandler` handler wraps around the [Observation] lifecycle and execute it's methods on lifecycle events. An `ObservationHandler` reacts only to supported implementations of an `Observation.Context` and can create, for example, timers, spans, and logs by reacting to the lifecycle events of an observation, such as:
 
 * `start` - Observation has been started. Happens when the `Observation#start()` method gets called.
 * `stop` - Observation has been stopped. Happens when the `Observation#stop()` method gets called.
@@ -76,7 +81,7 @@ Micrometer employs "handlers" that are notified about the lifecycle event of an 
 * `scope started` - Observation opens a scope. The scope must be closed when no longer used. Handlers can create thread local variables on start that are cleared upon closing of the scope. Happens when the `Observation#openScope()` method gets called.
 * `scope stopped` - Observation stops a scope. Happens when the `Observation.Scope#close()` method gets called.
 
-The default autoconfiguration will create at least an [ObservationRegistry]() which is responsable for managing the state of Observations. Additionally, we get multiple [ObservationHandlers]() that handle various instrumentation strategies (e.g. tracing, metrics, logging, etc..). We can declare one more handler, that will log on each Observation lifecycle stage - [ObservationTextPublisher]().
+The default autoconfiguration will create at least an `ObservationRegistry` which is responsable for managing the state of Observations. Additionally, we get multiple `ObservationHandlers` that handle various instrumentation strategies (e.g. tracing, metrics, logging, etc..). For this example, lets declare one more handler that will log on each Observation lifecycle stage - [ObservationTextPublisher](https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-observation/src/main/java/io/micrometer/observation/ObservationTextPublisher.java).
 
 ```java
 @Component
@@ -156,7 +161,7 @@ logging.pattern.level=%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-
 
 ## A Greeting Service
 
-A service will let us create a small amount of indirection for the REST endpoint, and allow us to establish service hand-offs in tracing logs. In this example, we only need to return a specific payload: `Greeting`.
+The example will use a REST endpoint which calls a service - a small amount of indirection, allowing us to establish service hand-offs in tracing logs. In this example, we only return a specific payload: `Greeting`.
 
 The payload is a simple record:
 
@@ -202,9 +207,10 @@ class LatencySupplier implements Supplier<Long> {
     }
 }
 ```
+
 ## Create a REST endpoint
 
-Next, we will need to add a REST endpoint that simply returns salutations/greetings to a name derived from the path parameter {name}. It looks like this:
+Next, we will add a REST endpoint that returns a salutations/greetings to a name derived from the path parameter {name}. It looks like this:
 
 ```kotlin
 @RestController
@@ -220,6 +226,49 @@ class GreetingController {
     }
 }
 ```
+
+## Reactive stream Observation and Metrics
+
+We will make use of the reactive `tap` operators to instrument the streams in this sample. The `tap` operator makes use of a stateful per-subscription [SignalListener]() to manage the state of the observation in progress.
+
+To get an micrometer signal listener, import the [reactor-core-micrometer](https://github.com/reactor/reactor-core/tree/main/reactor-core-micrometer) dependency. This API provides all of the necessary components that supply Observation and Meter metrics gathering in Reactive streams. Note, that this API also relies on [context-propagation](https://micrometer.io/docs/contextPropagation) to populate thread locals around the opening of Observations/Meters upon stream subscription.
+
+Here are the additions we will add to pom.xml to enable reactive stream observation:
+
+```xml
+		<!-- Micrometer API -->
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-core-micrometer</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>context-propagation</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+```
+
+In this example, we are interested in the `reactor.core.observability.micrometer.Micrometer` API that provides us the StreamListener needed to observe the stream. This API supports instrumentation of `reactor.core.scheduler.Scheudler`'s, as well as applying Meters and Observations on a per-subscription basis to the reactive stream. This example will observe our stream using the `Micrometer.observation` API.
+
+GreetingService.java:
+```java
+        return Mono
+                .just(new Greeting(name))
+                .delayElement(Duration.ofMillis(lat))
+                .name("greeting.call")                  // 1
+                .tag("latency", lat.toString())         // 2
+                .tap(Micrometer.observation(registry))  // 3
+```
+
+Given the above, we will have a child span for the parent HTTP controller one. The main additions are as follows:
+
+1. Using `.name` to specify the `Observation` name.
+2. Low cardinality tags add attributes to our measurements.
+3. Produce the `Observation` specific signal listener. This covers the entire length of the sequence.
+
+The core details of how you can further work in micrometer metrics into your streams can be read at the [Micrometer Observation Docs](https://micrometer.io/docs/observation).
+
+## Execute the app
 
 Executing this application alone will not produce the observation output we need. So some more knowledge and program details are required before we should continue. The next section will describe the monitoring platform itself, and how it relates to the example program we just started.
 # Introduction of the Monitoring Platform
@@ -243,15 +292,11 @@ cd infra/
 docker compose up
 ```
 
-This might take a minute or two since containers need to be transferred over the network. However, by the time it's done, you should see something like the following:
-
-![aftermath of docker compose up](images/docker-compose-up.png)
-
-At this point, we will spend the next few subsections examining this infrastructure.
+This might take a minute or two since containers need to be transferred over the network. Next, we can move on and examine this infrastructure.
 
 ## Prometheus Setup
 
-One of the Prometheus side, we have [scrape config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/) that lets it ingest our actuator endpoint. 
+One of the Prometheus side, we have [scrape config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/) that configures ingest of the actuator endpoint. 
 
 > **_NOTE:_** In this configuration, we are running a docker hosted instance of Prometheus; You may need to change the host names as needed for your specific setup.
 
@@ -264,7 +309,8 @@ scrape_configs:
         - targets: ['host.docker.internal:8787']
 ```
 
-We already added the necessary dependency when we were in `start.spring.io`:
+To get data into the format that Prometheus can perceive, we already added the necessary dependency when we were in `start.
+spring.io`:
 ```xml
 		<dependency>
 			<groupId>io.micrometer</groupId>
@@ -287,15 +333,13 @@ management.endpoint.prometheus.enabled=true
 Also, because we are going to use support for `Exemplars` in Prometheus, we will need to enable histogram buckets for 
 our named observations - that tie traceId to metric buckets. 
 
-The following configuration adds percentile histogram buckets for `http.server.requests` which is the prefix to the stats names that represents `WebMVC`/`WebFlux`. Additionally we want to create another for our own `server.job` statistics.
+The following configuration adds percentile histogram buckets for `http.server.requests` which is the prefix to the stats names that represents `WebMVC`/`WebFlux` requests. Additionally we want to create another for our own `server.job` statistics.
 
 In `application.properties`, add:
 ```properties
 management.metrics.distribution.percentiles-histogram.http.server.requests=true
 management.metrics.distribution.percentiles-histogram.server.job=true
 ```
-
-There are more dependencies for each of our observation platform components and will review them in the next few subsections.
 ## Loki log aggregation config
 
 We will configure a logback appender to emit our logs directly to Loki. Loki appenders are of the [loki4j](https://loki4j.github.io/loki-logback-appender/) variety and are implemented in `com.github.loki4j.logback.Loki4jAppender`.
@@ -312,7 +356,7 @@ To make this work, we use the `loki-logback-appender` dependency as configured w
 		</dependency>
 ```
 
-And the source ot our `logback-spring.xml` should be found under `resources`:
+And the source to our `logback-spring.xml` should be found under `resources`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -343,9 +387,7 @@ And the source ot our `logback-spring.xml` should be found under `resources`:
 
 ## Tempo - Micrometer Tracing
 
-To get our traces over to tempo, this example will use [micrometer tracing](https://micrometer.io/docs/tracing) that ships traces over to Tempo.
-
-With help of [Openzipkin Brave](https://github.com/openzipkin/zipkin-reporter-java/tree/master/brave) and the [micrometer bridge for Brave, we can ship traces to Tempo directly from micrometer. In order to use this, however we must include both the bridge and the underlaying API that bridge will use.
+This example will use [Micrometer tracing](https://micrometer.io/docs/tracing) that ships traces over to Tempo. With help of [Openzipkin Brave](https://github.com/openzipkin/zipkin-reporter-java/tree/master/brave) and the [micrometer bridge](https://github.com/micrometer-metrics/tracing/tree/main/micrometer-tracing-bridges) for Brave, we can ship traces to Tempo directly from Micrometer. In order to use this, however we must include both the bridge and the underlaying API that bridge will use.
 
 Dependencies to use Brave Tracing from micrometer:
 ```xml
@@ -358,96 +400,48 @@ Dependencies to use Brave Tracing from micrometer:
 			<artifactId>zipkin-reporter-brave</artifactId>
 		</dependency>
 ```
+
 ## Grafana dashboards
 
-In this example, Grafana will be provisioned with external data given from configuration within `infra/docker/grafana/provisioning/datasources/datasource.yml`. This tells grafana where to find each external source of data we will be querying. We will be tracking spans from Tempo, logs from Loki and Metrics from Prometheus.
+Grafana will be provisioned with external data given from configuration within `infra/docker/grafana/provisioning/datasources/datasource.yml`. This tells grafana where to find each external source of data we will be querying. We will be tracking spans from Tempo, logs from Loki and Metrics from Prometheus.
 
-Probably most importantly are the dashboards we will use to visualize these queries. This configuration  - in addition to visual setup - describes the Prometheus [queries](https://prometheus.io/docs/prometheus/latest/querying/basics/) we will execute to visualize our metric data. This dashboard will visualize our metric data and enable us to select a specific sample - an [exemplar](https://grafana.com/docs/grafana/v9.0/basics/exemplars/) - to gather a in-depth view into the process that occured at that sample point.
+To connect visualization with Prometheus, we will configure our dashboards with Prometheus [queries](https://prometheus.io/docs/prometheus/latest/querying/basics/). This dashboard will visualize our metric/span data and enable us to select a specific sample - an [exemplar](https://grafana.com/docs/grafana/v9.0/basics/exemplars/) - to gather a in-depth view into the process that occured at that sample point.
 
-Here is an example of the exemplar that connects a metric sample with trace_data, and therefore it's related logs:
+This dashboard configuration is provided in `infra/docker/grafana/provisioning/dashboards/logs_traces_metrics.json` and acts as our standard example dashboard called `logs_traces_metrics`.
 
-![Exemplar](images/exemplar.png)
+# Observing the Reactive WebFlux app
 
-Therefore, the configuration for such are provided in `infra/docker/grafana/provisioning/dashboards/logs_traces_metrics.json` and acts as our standard example dashboard called `logs_traces_metrics`.
+[WebFluxObservationAutoConfiguration]() is the autoconfiguration class for observation in WebFlux. It includes everything 
+we need to observe (draw traces and meters from) HTTP requests and responses, thus no additional configuration is necessary. 
 
-# Observing our app
-
-We want to instrument any request to `/hello/{name}` with traces/spans, and timers for latency. One way to do this
-is by annotating a method with [@Observed](). Per the doc;  You can put that annotation either on a method to observe
-it or a class to observe all methods in it.
-
-First, we will enable the AspectJ advice for intercepting types or methods annotated with @Observed.
-
-We can declare bean [ObservedAspect]() for this:
-
-```kotlin
-    @Bean
-    fun observedAspect(observationRegistry: ObservationRegistry): ObservedAspect =
-            ObservedAspect(observationRegistry)
-```
-
-We will then decorate our service method with `@Observed` and explain the parameters below:
-
-```kotlin
-@Service
-class HelloService {
-    val log: Logger = LoggerFactory.getLogger(HelloService::class.java)
-
-    @Observed(name = "greeting", contextualName = "get-greeting", 
-            lowCardinalityKeyValues = ["GreetingType", "Salutation"])
-    fun getHello(name: String): Greeting {
-
-        if (StringUtils.hasText(name) &&
-                name[0].isDigit()) {
-            throw IllegalArgumentException("Invalid name format.")
-        }
-
-        Thread.sleep(200)
-
-        return Greeting("HELLO THERE, $name at ${System.currentTimeMillis()}")
-    }
-}
-```
-
-With metrics and tracing on the classpath, having this annotation leads to the creation of a `timer`, 
-a `long task timer`, and a `span`. The timer would be named `greeting`, 
-the long task timer would be named `greeting.active`, and the span would be named `get-greeting`.
-
-### A Custom Handler
-
-We can output some logs when a request is received and completed. As mentioned above, this is possible by
-implementing a custom `ObservationHandler`. 
-
-The following `ObservationHandler` will be registered and active during the server lifecycle:
-```kotlin
-@Component
-class HelloObservationHandler : ObservationHandler<Observation.Context> {
-
-    val logger: Logger = LoggerFactory.getLogger(HelloObservationHandler::class.java)
-
-    override fun onStart(context: Observation.Context) {
-        logger.info("Started observation of ${context.name}")
-    }
-
-    override fun onStop(context: Observation.Context) {
-        logger.info("Stopped observation for ${context.name}")
-    }
-
-    override fun supportsContext(context: Observation.Context): Boolean = true
-}
-```
-
-
-Execute this application, then call the exposed endpoint endpoint using our favorite [HTTPIE]() command:
+We now can execute the application as-is:
 
 ```shell
-http :8787/hello/Mr\ \.Kenobi
+mvn spring-boot:run
 ```
 
-This verifies we created an app that is MOSTLY instrumented...
-# Exemplars
+Once the application is started, a number of metrics will be populated because of scraping activity from Prometheus to the `/actuator/prometheus` endpoint. To add our own service activity, lets create some traffic.
 
+```bash
+while true; do http :8787/hello/spring-boot-3 ; sleep 1; done
+```
 
+This will call our endpoint every second. Allow it run for a minute or two so Prometheus can collect metrics. Then browse over to `http://localhost:3000/dashboards` and select 'General', then 'Logs, Traces, Metrics' dashboard. You would be facing a screen similar to the following screenshot:
+
+![dashboard 1st](images/first-dashboard-screen.png)
+
+Notice, we have a several gray squares - these are the `exemplars` we described earlier. The exemplar data is located in a hovering DIV and cooresponds to the details matched between that particular metric and a trace.
+
+![exemplar](images/exemplar-data.png)
+
+ The trace can be searched for in Loki at the top of this dashboard, for which Tempo data will be displayed. Clicking on 'Query with Tempo' will produce similar information.
+
+![dashboard 2nd](images/second-dashboard-screen.png)
+
+A full trace view can be expanded. Note we also see the trace generated through our service
+call - the reactive stream observation made as a child trace to the main HTTP request.
+
+![dashboard full](images/full-trace-view.png)
 
 ## Links and Readings
 
