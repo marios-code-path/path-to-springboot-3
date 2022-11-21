@@ -48,5 +48,4 @@ public class ManualObservationApplication {
 
 		log.info("Result was: " + something);
 	}
-
 }
