@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @SpringBootApplication
 public class ManualObservationApplication {
-
+`
 	public static void main(String[] args) {
 		SpringApplication.run(ManualObservationApplication.class, args);
 	}
