@@ -11,7 +11,6 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static com.example.observation.webflux.ReactiveLogUtils.logOnNext;
 import static java.lang.Math.*;
 
 @Service
