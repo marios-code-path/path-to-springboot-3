@@ -32,7 +32,7 @@ public class ManualObservationApplication {
 		String something = Observation
 				.createNotStarted("server.job", registry)
 				.lowCardinalityKeyValue("jobType", "string")
-				.observe(() -> {
+				.observeChecked(() -> {
 					log.info("Generating a String...");
 					try {
 						Thread.sleep(1000);

@@ -44,7 +44,7 @@
 		<dependency>
 			<groupId>com.github.loki4j</groupId>
 			<artifactId>loki-logback-appender</artifactId>
-			<version>1.4.0-rc1</version>
+			<version>1.3.2</version>
 		</dependency>
 		<!-- Reactor observation -->
 		<dependency>
@@ -52,13 +52,9 @@
 			<artifactId>reactor-core-micrometer</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>context-propagation</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<scope>provided</scope>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
